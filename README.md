@@ -5,7 +5,7 @@ Reproducible code archive for NPRZ impact assessment study
 ## Preprocessing
 The preprocessing scripts can be run all at once by running the file `01_run_preprocessing.R` from the main directory.
 
-```r
+```
 RScript 01_run_preprocessing.R
 ```
 
