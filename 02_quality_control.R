@@ -5,7 +5,6 @@
 library(tidyverse)
 library(haven)
 
-setwd("H:/synthetic_control_analysis")
 
 y8s <- read_rds("processed_data/year8_students.rds")
 y8s_full <- read_rds("processed_data/year8_students_full.rds")
@@ -35,7 +34,6 @@ y8s |>
   unique() |> 
   select(peiljaar) |>
   table()
-
 # 24 schools for later years, only 18 for first year.
 # we should have 26 in total. TODO: check where students/schools go missing
 # They are simply not in the INSCHRWPOTAB
@@ -43,7 +41,9 @@ y8s |>
 # notfound <- 
 #   anti_join(NPRZ_schools, y8s, by = join_by( "wpobrin_crypt" == "WPOBRIN_crypt", "wpobrinvest" == "WPOBRINVEST")) |> 
 #   arrange(Hours_1314)
-
+# not available: row 3, row 5
+# brin_crypt: "7a14e2a0e3869f91ecb036df96cad418" "245e04f7f1165ee8c1e89c24704f7fa7"
+# brinvest: "01" "01"
 
 # checks for outcome variables ----
 ## Time-series plot of outcomes ----
@@ -150,7 +150,7 @@ y8s  |>
   ungroup() |>
   select(peiljaar) |>
   table()
-# 8 schools with <10% missing data since 2009
+# <10 schools with <10% missing data since 2009
 
 ###  CITO availability throughout the years ----
 y8s_full  |>
@@ -202,7 +202,7 @@ y8s_full  |>
   geom_point(position = position_jitter(width = .2, height = 0))
 # in some schools the level of valid CITO scores is low. TODO: determine threshold for analysis
 
-# How many intervention schools have >90% scores throughout the years?
+# How many intervention schools have >85% scores throughout the years?
 y8s_full  |>
   filter(intervention == "early") |>
   group_by(peiljaar, WPO_BRIN_unique, control_testtype) |>
@@ -212,11 +212,11 @@ y8s_full  |>
   group_by(peiljaar, WPO_BRIN_unique) |>
   mutate(perc_CITO = N_cat / sum(N_cat) * 100) |>
   filter(control_testtype == "CITO" & !is.nan(perc_CITO)) |>
-  filter(perc_CITO > 90) |>
+  filter(perc_CITO > 85) |>
   ungroup() |>
   select(peiljaar) |>
   table()
-# 5 schools in 2009, 6 schools in 2019. TODO: check whether these are the same schools across years
+# <10 schools in 2009, <10 schools in 2019. TODO: check whether these are the same schools across years
 
 ## average CITO scores for intervention groups throughout the years ----
 # check distribution of CITO
@@ -235,7 +235,7 @@ y8s_full |>
   select(insiderange_CITO) |>
   table()
 # only 281 values => to be neglected. 
-# TODO: remove values outside range CITO before analysis
+# TODO: remove values outside range CITO before analysis => DONE
 
 # development in CITO scores for intervention groups
 y8s_full  |>

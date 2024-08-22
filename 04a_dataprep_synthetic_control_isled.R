@@ -11,6 +11,14 @@ df <- read_rds("processed_data/school_data.rds")
 # Remove late intervention group
 df <- df |> filter(intervention != "late")
 
+# Get intervention schools
+intervened_ids <- 
+  df |> 
+  filter(intervention != "no") |> 
+  pull(school_id) |> 
+  unique()
+
+
 # Year should be integer and schoolstability should be too
 df <- 
   df |> 
@@ -25,6 +33,12 @@ df <- expand_grid(
   school_id = unique(df$school_id),
 ) |> left_join(df, by = join_by(school_id, peiljaar))
 
+
+# Make sure intervention column is complete
+df[df$school_id %in% intervened_ids & is.na(df$intervention), "intervention"] <- "early"
+df[!df$school_id %in% intervened_ids & is.na(df$intervention), "intervention"] <- "no"
+
+
 # only retain the variables we need
 df <- 
   df |> 
@@ -33,54 +47,55 @@ df <-
     intervention, 
     peiljaar,
     outcome_ISLED_mean,
-    control_groupsize_mean,
+    outcome_ISLED_valid,
+    outcome_ISLED_missing,
+    control_schoolsize,
     control_desc_native_mean,
     control_desc_surinam_mean,
     control_desc_morocco_mean,
     control_desc_turkey_mean,
     control_desc_aru_ant_mean,
-    control_schoolstability_trunc,
     control_perc_income_mean,
+    control_perc_wealth_mean,
+    control_single_parent_mean,
     control_educ_lower_pa_mean,
     control_educ_lower_ma_mean,
-    control_schooldenom
+    control_schooldenom,
+    control_schoolstability_trunc
   )
 
-# Get intervention schools
-intervened_ids <- 
-  df |> 
-  filter(intervention != "no") |> 
-  pull(school_id) |> 
-  unique()
+# Missing data handling
+df <-
+  df |>
+  mutate(
+    prop_valid_isled = outcome_ISLED_valid / (outcome_ISLED_missing + outcome_ISLED_valid),
+    outcome_ISLED_mean = if_else(prop_valid_isled < 0.75 | outcome_ISLED_valid < 11, NA, outcome_ISLED_mean),
+  )
 
-# Remove schools from donor pool if they do not have ISLED score before 2011
-keepschools <- 
+# Remove schools with too few data-points
+# Schools should have at least 2 pre-intervention ISLED scores and 2 post
+keep_schools <-
   df |> 
-  filter(!school_id %in% intervened_ids) |> 
-  summarize(mis = is.na(outcome_ISLED_mean), .by = c(peiljaar, school_id)) |> 
-  pivot_wider(names_from = peiljaar, values_from = mis, names_prefix = "mis") |> 
-  mutate(keep = !mis2009 & !mis2010) |> 
-  select(school_id, keep)
+  mutate(prepost = if_else(peiljaar <= 2013, "pre", "post")) |>
+  summarize(count = sum(!is.na(outcome_ISLED_mean)), .by = c(school_id, prepost)) |>
+  arrange(school_id) |>
+  summarize(keep = min(count) >= 2, .by = school_id)
 
-df <- bind_rows(
-  df |> filter(school_id %in% intervened_ids),
-  df |> 
-    filter(!school_id %in% intervened_ids) |> 
-    left_join(keepschools, by = join_by(school_id)) |> 
-    filter(keep) |> 
-    select(-keep)
-)
+df <- left_join(df, keep_schools, by = join_by(school_id)) |> filter(keep) |> 
+  select(-keep, -prop_valid_isled, -outcome_ISLED_valid, -outcome_ISLED_missing)
 
-# imputation. this is a quick fix, we should change this / 
-# think about it better!
+
+# Single imputation of the remaining missings. NB: single imputation will ignore some 
+# level of uncertainty about the values we impute. 
 res <- mice(df, m = 1)
 df  <- as_tibble(complete(res, 1))
-
 
 # function to create synth matrices from data frame and ids.
 create_synth_matrices <- function(df, intervened_ids, id = 1) {
   intervened_id <- intervened_ids[id]
   i_school <- df |> filter(school_id == intervened_id)
+  
+  if (nrow(i_school) == 0) return()
   
   # only retain donors that are the same denomination as the i_school 
   donor_ids <- 
@@ -102,14 +117,15 @@ create_synth_matrices <- function(df, intervened_ids, id = 1) {
     id_schools |> 
     filter(peiljaar <= 2013) |> 
     summarise(
-      school_size  = mean(control_groupsize_mean, na.rm = TRUE),
-      desc_native  = mean(control_desc_native_mean, na.rm = TRUE),
-      desc_surinam = mean(control_desc_surinam_mean, na.rm = TRUE),
-      desc_morocco = mean(control_desc_morocco_mean, na.rm = TRUE),
-      desc_turkey  = mean(control_desc_turkey_mean, na.rm = TRUE),
-      desc_aru_ant = mean(control_desc_aru_ant_mean, na.rm = TRUE),
-      sclstability = mean(control_schoolstability_trunc, na.rm = TRUE),
-      perc_income  = mean(control_perc_income_mean, na.rm = TRUE),
+      schoolsize      = mean(control_schoolsize, na.rm = TRUE),
+      desc_native     = mean(control_desc_native_mean, na.rm = TRUE),
+      desc_surinam    = mean(control_desc_surinam_mean, na.rm = TRUE),
+      desc_morocco    = mean(control_desc_morocco_mean, na.rm = TRUE),
+      desc_turkey     = mean(control_desc_turkey_mean, na.rm = TRUE),
+      desc_aru_ant    = mean(control_desc_aru_ant_mean, na.rm = TRUE),
+      perc_income     = mean(control_perc_income_mean, na.rm = TRUE),
+      single_parent   = mean(control_single_parent_mean, na.rm = TRUE),
+      schoolstability = mean(control_schoolstability_trunc, na.rm = TRUE),
       .by = school_id
     )
   
@@ -120,8 +136,8 @@ create_synth_matrices <- function(df, intervened_ids, id = 1) {
       id_schools |> 
       filter(peiljaar %in% 2012:2013) |> 
       summarise(
-        edu_lo_father = mean(control_educ_lower_pa_mean, na.rm = TRUE),
-        edu_lo_mother = mean(control_educ_lower_ma_mean, na.rm = TRUE),
+        edu_lo_father  = mean(control_educ_lower_pa_mean, na.rm = TRUE),
+        edu_lo_mother  = mean(control_educ_lower_ma_mean, na.rm = TRUE),
         .by = school_id
       ),
       by = join_by(school_id)
@@ -183,17 +199,6 @@ create_synth_matrices <- function(df, intervened_ids, id = 1) {
   ))
 }
 
-get_donors_by_denom <- function(df, denom) {
-  # If school has ever been of this denomination, include it in
-  # the donor pool
-  donor_schools <- 
-    df |> 
-    filter(intervention == "no") |> 
-    summarize(donor = denom %in% control_schooldenom, .by = school_id) |> 
-    filter(donor) |> 
-    select(school_id)
-}
-
 # Actually create the synth matrices
 synth_mats <- map(
   .x = seq_along(intervened_ids), 
@@ -202,5 +207,8 @@ synth_mats <- map(
 )
 names(synth_mats) <- intervened_ids
 
+# remove empty ones
+synth_mats <- synth_mats[map(synth_mats, length) != 0]
+
 # store the synth matrices
-write_rds(synth_mats, "processed_data/synth_mats.rds")
+write_rds(synth_mats, "processed_data/synth_mats_isled.rds")

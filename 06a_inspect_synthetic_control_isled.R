@@ -1,11 +1,11 @@
 library(tidyverse)
 library(purrr)
 library(patchwork)
+library(writexl)
 
 # read data and synth weights
-psynth_list <- read_rds("processed_data/psynth_list.rds")
-synth_mats <- read_rds("processed_data/synth_mats.rds")
-
+psynth_list <- read_rds("processed_data/psynth_list_isled.rds")
+synth_mats <- read_rds("processed_data/synth_mats_isled.rds")
 
 # Function to plot the synthetic control based on unit weights
 synth_tibble <- function(matrices, weights) {
@@ -40,7 +40,7 @@ plot_synth <- function(matrices, weights) {
 }
 
 # example usage:
-plot_synth(synth_mats[[3]], psynth_list[[3]]$w_opt)
+plot_synth(synth_mats[[1]], psynth_list[[1]]$w_opt)
 
 
 # do all of them
@@ -52,7 +52,7 @@ iwalk(plot_list, \(p, i) ggsave(
 ), .progress = TRUE)
 
 # all at once 
-wrap_plots(plot_list, guides = "collect", nrow = 5, ncol = 5)
+wrap_plots(plot_list, guides = "collect", nrow = 5, ncol = 5) * ylim(30, 60)
 ggsave("img/synth_plots.png", width = 12, height = 7)
 
 
@@ -141,8 +141,8 @@ balance_table |>
 
 ggsave("img/balance_plot_nondisclosive.png", width = 11, height = 7, bg = "white")
 
-# balance delta
-balance_table |> 
+# balance delta, smd plot
+smd_plot_data <- balance_table |> 
   pivot_wider(
     names_from = synthetic,
     values_from = value
@@ -153,22 +153,22 @@ balance_table |>
     .by   = variable
   ) |> 
   summarize(
-    est   = mean(smd, na.rm = TRUE),
-    sdev  = sd(smd, na.rm = TRUE),
-    lower = est - 1.96*sdev/sqrt(n()),
-    upper = est + 1.96*sdev/sqrt(n()),
+    smd   = mean(smd, na.rm = TRUE),
+    n     = n(),
     .by   = variable
-  ) |> 
+  )
+
+smd_plot_data |> 
   ggplot(
     aes(
-      x      = est,
+      x      = smd,
       y      = fct_rev(variable),
-      xmin   = lower,
-      xmax   = upper,
+      xmin   = smd - 1.96 / sqrt(n),
+      xmax   = smd + 1.96 / sqrt(n),
       colour = str_detect(variable, "outcome")
     )
   ) + 
-  geom_segment(aes(x = est - 2*sdev, xend = est + 2*sdev, yend = fct_rev(variable))) + 
+  geom_segment(aes(x = smd - 2, xend = smd + 2, yend = fct_rev(variable))) + 
   geom_pointrange(linewidth = 1.2) +
   scale_colour_manual(values = c("black", "seagreen"), guide = "none") +
   xlim(-4, 4) +

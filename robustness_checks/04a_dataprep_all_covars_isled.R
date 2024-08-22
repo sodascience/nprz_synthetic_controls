@@ -18,30 +18,18 @@ intervened_ids <-
   pull(school_id) |> 
   unique()
 
+
 # Year should be integer and schoolstability should be too
 df <- 
   df |> 
   mutate(
     peiljaar = as.integer(as.character(peiljaar)),
     control_schoolstability_trunc = as.integer(as.character(control_schoolstability_trunc))
-  ) |> 
-  filter(
-    # remove years with extreme missingness
-    peiljaar > 2009, peiljaar < 2018
   )
-
-
-# only select schools that use CITO for all these years
-cito_schools <- 
-  df |> 
-  summarize(uses_cito = all(control_testtype_mostcommon == "CITO"), .by = school_id)
-
-df <- df |> left_join(cito_schools, by = join_by(school_id)) |> filter(uses_cito) |> select(-uses_cito)
-
 
 # make sure every peiljaar is there
 df <- expand_grid(
-  peiljaar = 2010L:2017L, 
+  peiljaar = 2009L:2022L, 
   school_id = unique(df$school_id),
 ) |> left_join(df, by = join_by(school_id, peiljaar))
 
@@ -58,9 +46,9 @@ df <-
     school_id,
     intervention, 
     peiljaar,
-    outcome_CITO_mean,
-    outcome_CITO_valid,
-    outcome_CITO_missing,
+    outcome_ISLED_mean,
+    outcome_ISLED_valid,
+    outcome_ISLED_missing,
     control_schoolsize,
     control_desc_native_mean,
     control_desc_surinam_mean,
@@ -69,9 +57,14 @@ df <-
     control_desc_aru_ant_mean,
     control_perc_income_mean,
     control_perc_wealth_mean,
+    control_income_social_mean,
     control_single_parent_mean,
+    control_educ_higher_pa_mean,
+    control_educ_higher_ma_mean,
     control_educ_lower_pa_mean,
     control_educ_lower_ma_mean,
+    control_educ_missing_pa_mean,
+    control_educ_missing_ma_mean,
     control_schooldenom,
     control_schoolstability_trunc
   )
@@ -80,21 +73,21 @@ df <-
 df <-
   df |>
   mutate(
-    prop_valid_cito = outcome_CITO_valid / (outcome_CITO_missing + outcome_CITO_valid),
-    outcome_CITO_mean = if_else(prop_valid_cito < 0.75 | outcome_CITO_valid < 11, NA, outcome_CITO_mean),
+    prop_valid_isled = outcome_ISLED_valid / (outcome_ISLED_missing + outcome_ISLED_valid),
+    outcome_ISLED_mean = if_else(prop_valid_isled < 0.75 | outcome_ISLED_valid < 11, NA, outcome_ISLED_mean),
   )
 
 # Remove schools with too few data-points
-# Schools should have at least 2 pre-intervention CITO scores and 2 post
+# Schools should have at least 2 pre-intervention ISLED scores and 2 post
 keep_schools <-
   df |> 
   mutate(prepost = if_else(peiljaar <= 2013, "pre", "post")) |>
-  summarize(count = sum(!is.na(outcome_CITO_mean)), .by = c(school_id, prepost)) |>
+  summarize(count = sum(!is.na(outcome_ISLED_mean)), .by = c(school_id, prepost)) |>
   arrange(school_id) |>
   summarize(keep = min(count) >= 2, .by = school_id)
 
 df <- left_join(df, keep_schools, by = join_by(school_id)) |> filter(keep) |> 
-  select(-keep, -prop_valid_cito, -outcome_CITO_valid, -outcome_CITO_missing)
+  select(-keep, -prop_valid_isled, -outcome_ISLED_valid, -outcome_ISLED_missing)
 
 
 # Single imputation of the remaining missings. NB: single imputation will ignore some 
@@ -136,6 +129,8 @@ create_synth_matrices <- function(df, intervened_ids, id = 1) {
       desc_turkey     = mean(control_desc_turkey_mean, na.rm = TRUE),
       desc_aru_ant    = mean(control_desc_aru_ant_mean, na.rm = TRUE),
       perc_income     = mean(control_perc_income_mean, na.rm = TRUE),
+      perc_wealth     = mean(control_perc_wealth_mean, na.rm = TRUE),
+      income_social   = mean(control_income_social_mean, na.rm = TRUE),
       single_parent   = mean(control_single_parent_mean, na.rm = TRUE),
       schoolstability = mean(control_schoolstability_trunc, na.rm = TRUE),
       .by = school_id
@@ -146,12 +141,16 @@ create_synth_matrices <- function(df, intervened_ids, id = 1) {
     X_data |> 
     left_join(
       id_schools |> 
-        filter(peiljaar %in% 2012:2013) |> 
-        summarise(
-          edu_lo_father  = mean(control_educ_lower_pa_mean, na.rm = TRUE),
-          edu_lo_mother  = mean(control_educ_lower_ma_mean, na.rm = TRUE),
-          .by = school_id
-        ),
+      filter(peiljaar %in% 2012:2013) |> 
+      summarise(
+        edu_lo_father  = mean(control_educ_lower_pa_mean, na.rm = TRUE),
+        edu_lo_mother  = mean(control_educ_lower_ma_mean, na.rm = TRUE),
+        edu_hi_father  = mean(control_educ_higher_pa_mean, na.rm = TRUE),
+        edu_hi_mother  = mean(control_educ_higher_ma_mean, na.rm = TRUE),
+        edu_mis_father = mean(control_educ_missing_pa_mean, na.rm = TRUE),
+        edu_mis_mother = mean(control_educ_missing_ma_mean, na.rm = TRUE),
+        .by = school_id
+      ),
       by = join_by(school_id)
     )
   
@@ -165,7 +164,7 @@ create_synth_matrices <- function(df, intervened_ids, id = 1) {
   outcome_data <- 
     id_schools |> 
     summarise(
-      outcome = outcome_CITO_mean,
+      outcome = outcome_ISLED_mean,
       .by = c(school_id, peiljaar)
     )
   
@@ -223,4 +222,4 @@ names(synth_mats) <- intervened_ids
 synth_mats <- synth_mats[map(synth_mats, length) != 0]
 
 # store the synth matrices
-write_rds(synth_mats, "processed_data/synth_mats_cito.rds")
+write_rds(synth_mats, "processed_data/synth_mats_robustness_isled.rds")

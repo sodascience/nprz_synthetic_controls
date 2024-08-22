@@ -7,7 +7,7 @@ plan(multisession)
 library(pensynth) # github.com/vankesteren/pensynth
 
 # read the prepared data
-synth_mats <- read_rds("processed_data/synth_mats_cito.rds")
+synth_mats <- read_rds("processed_data/synth_mats_robustness_isled.rds")
 
 # Compute penalized synthetic control
 # use Z (pre-intervention outcomes) as cross-validation target to tune lambda
@@ -15,26 +15,15 @@ synth_mats <- read_rds("processed_data/synth_mats_cito.rds")
 psynth_list <- future_map(
   .x = synth_mats, 
   .f = function(m) {
-    try(cv_pensynth(
+    cv_pensynth(
       X1 = m$X1,
       X0 = m$X0,
       v  = 1,
       Z1 = m$Z1,
       Z0 = m$Z0,
       nlambda = 100
-    ))
+    )
   }, 
   .progress = TRUE
 )
-write_rds(psynth_list, "processed_data/psynth_list_cito.rds")
-
-# Showcase: weight path
-png("img/weight_path_school_1_cito.png", width = 2400, height = 1800, res = 200)
-plot_path(psynth_list[[1]])
-dev.off()
-
-png("img/weights_school_11_cito.png", width = 2400, height = 1800, res = 200)
-par(mfrow = c(2, 1))
-barplot(psynth_list[[1]]$w_path[,1],main = "Unpenalized weights")
-barplot(psynth_list[[1]]$w_opt, main = "CV penalized weights")
-dev.off()
+write_rds(psynth_list, "processed_data/psynth_list_robustness_isled.rds")

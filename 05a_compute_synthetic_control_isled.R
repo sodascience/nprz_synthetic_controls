@@ -7,7 +7,7 @@ plan(multisession)
 library(pensynth) # github.com/vankesteren/pensynth
 
 # read the prepared data
-synth_mats <- read_rds("processed_data/synth_mats.rds")
+synth_mats <- read_rds("processed_data/synth_mats_isled.rds")
 
 # Compute penalized synthetic control
 # use Z (pre-intervention outcomes) as cross-validation target to tune lambda
@@ -26,24 +26,24 @@ psynth_list <- future_map(
   }, 
   .progress = TRUE
 )
-write_rds(psynth_list, "processed_data/psynth_list.rds")
+write_rds(psynth_list, "processed_data/psynth_list_isled.rds")
 
 # Showcase: weight path
-png("img/weight_path_school_19.png", width = 2400, height = 1800, res = 200)
-plot_path(psynth_list[[19]])
+png("img/weight_path_school_1.png", width = 2400, height = 1800, res = 200)
+plot_path(psynth_list[[1]])
 dev.off()
 
-png("img/weights_school_19.png", width = 2400, height = 1800, res = 200)
+png("img/weights_school_1.png", width = 2400, height = 1800, res = 200)
 par(mfrow = c(2, 1))
-barplot(psynth_list[[19]]$w_path[,1], main = "Unpenalized weights")
-barplot(psynth_list[[19]]$w_opt, main = "CV penalized weights")
+barplot(psynth_list[[1]]$w_path[,1], main = "Unpenalized weights")
+barplot(psynth_list[[1]]$w_opt, main = "CV penalized weights")
 dev.off()
 
 # Another showcase: penalization helps with simplification
 school_id <- names(synth_mats)[12]
 synth_orig <- with(
   synth_mats[[school_id]], 
-  Synth::synth(X1 = X1, X0 = X0, custom.v = rep(1, 10), Z1 = Z1, Z0 = Z0)
+  Synth::synth(X1 = X1, X0 = X0, custom.v = rep(1, 11), Z1 = Z1, Z0 = Z0)
 )
 res_no_pen <- with(synth_mats[[school_id]], pensynth(X1, X0, 1, lambda = 0))
 res_pen <- with(synth_mats[[school_id]], pensynth(X1, X0, 1, lambda = 0.1))

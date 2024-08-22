@@ -36,10 +36,12 @@ school_data <-
     # for testtype, get the most common value
     control_testtype_mostcommon = get_most_common(control_testtype),
     
+    control_schoolsize = n(),
+    
     .by = c("school_id", "peiljaar")
   ) |> 
   mutate(
-    across(c(starts_with("control_school"), control_testtype_mostcommon), as.factor)
+    across(c(control_schooldenom, control_testtype_mostcommon), as.factor)
   )
 
 # clean up and store

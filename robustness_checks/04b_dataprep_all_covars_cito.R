@@ -69,9 +69,14 @@ df <-
     control_desc_aru_ant_mean,
     control_perc_income_mean,
     control_perc_wealth_mean,
+    control_income_social_mean,
     control_single_parent_mean,
+    control_educ_higher_pa_mean,
+    control_educ_higher_ma_mean,
     control_educ_lower_pa_mean,
     control_educ_lower_ma_mean,
+    control_educ_missing_pa_mean,
+    control_educ_missing_ma_mean,
     control_schooldenom,
     control_schoolstability_trunc
   )
@@ -80,8 +85,8 @@ df <-
 df <-
   df |>
   mutate(
-    prop_valid_cito = outcome_CITO_valid / (outcome_CITO_missing + outcome_CITO_valid),
-    outcome_CITO_mean = if_else(prop_valid_cito < 0.75 | outcome_CITO_valid < 11, NA, outcome_CITO_mean),
+    prop_valid_CITO = outcome_CITO_valid / (outcome_CITO_missing + outcome_CITO_valid),
+    outcome_CITO_mean = if_else(prop_valid_CITO < 0.75 | outcome_CITO_valid < 11, NA, outcome_CITO_mean),
   )
 
 # Remove schools with too few data-points
@@ -94,7 +99,7 @@ keep_schools <-
   summarize(keep = min(count) >= 2, .by = school_id)
 
 df <- left_join(df, keep_schools, by = join_by(school_id)) |> filter(keep) |> 
-  select(-keep, -prop_valid_cito, -outcome_CITO_valid, -outcome_CITO_missing)
+  select(-keep, -prop_valid_CITO, -outcome_CITO_valid, -outcome_CITO_missing)
 
 
 # Single imputation of the remaining missings. NB: single imputation will ignore some 
@@ -136,6 +141,8 @@ create_synth_matrices <- function(df, intervened_ids, id = 1) {
       desc_turkey     = mean(control_desc_turkey_mean, na.rm = TRUE),
       desc_aru_ant    = mean(control_desc_aru_ant_mean, na.rm = TRUE),
       perc_income     = mean(control_perc_income_mean, na.rm = TRUE),
+      perc_wealth     = mean(control_perc_wealth_mean, na.rm = TRUE),
+      income_social   = mean(control_income_social_mean, na.rm = TRUE),
       single_parent   = mean(control_single_parent_mean, na.rm = TRUE),
       schoolstability = mean(control_schoolstability_trunc, na.rm = TRUE),
       .by = school_id
@@ -146,12 +153,16 @@ create_synth_matrices <- function(df, intervened_ids, id = 1) {
     X_data |> 
     left_join(
       id_schools |> 
-        filter(peiljaar %in% 2012:2013) |> 
-        summarise(
-          edu_lo_father  = mean(control_educ_lower_pa_mean, na.rm = TRUE),
-          edu_lo_mother  = mean(control_educ_lower_ma_mean, na.rm = TRUE),
-          .by = school_id
-        ),
+      filter(peiljaar %in% 2012:2013) |> 
+      summarise(
+        edu_lo_father  = mean(control_educ_lower_pa_mean, na.rm = TRUE),
+        edu_lo_mother  = mean(control_educ_lower_ma_mean, na.rm = TRUE),
+        edu_hi_father  = mean(control_educ_higher_pa_mean, na.rm = TRUE),
+        edu_hi_mother  = mean(control_educ_higher_ma_mean, na.rm = TRUE),
+        edu_mis_father = mean(control_educ_missing_pa_mean, na.rm = TRUE),
+        edu_mis_mother = mean(control_educ_missing_ma_mean, na.rm = TRUE),
+        .by = school_id
+      ),
       by = join_by(school_id)
     )
   
@@ -223,4 +234,4 @@ names(synth_mats) <- intervened_ids
 synth_mats <- synth_mats[map(synth_mats, length) != 0]
 
 # store the synth matrices
-write_rds(synth_mats, "processed_data/synth_mats_cito.rds")
+write_rds(synth_mats, "processed_data/synth_mats_robustness_cito.rds")

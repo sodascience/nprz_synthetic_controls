@@ -119,42 +119,42 @@ write_rds(year8_students, "scratch/year8_students_intervention.rds")
 # Compute outcome variables ----
 cat(format(now()), "Computing outcome variables.\n")
 
-# Mixed recommendation: take highest possible ISLED
+# ISLED column mixed recommendation: take average of ISLEDs
+# ISLEDHI column mixed recommendation: take highest ISLED
 ISLED_LUT <- tribble(
-  ~advies, ~ISLED, ~HAVOVWO, ~VMBO, ~KADER,
-     "10",  29.34,    FALSE,  TRUE,   TRUE,
-     "20",  29.34,    FALSE,  TRUE,   TRUE,
-     "21",  29.34,    FALSE,  TRUE,   TRUE,
-     "22",  29.34,    FALSE,  TRUE,   TRUE,
-     "23",  29.34,    FALSE,  TRUE,   TRUE,
-     "24",  45.27,    FALSE,  TRUE,  FALSE,
-     "25",  45.27,    FALSE,  TRUE,  FALSE,
-     "26",  45.27,    FALSE,  TRUE,  FALSE,
-     "27",  45.27,    FALSE,  TRUE,  FALSE,
-     "28",  62.30,    FALSE, FALSE,  FALSE,
-     "29",  71.92,    FALSE, FALSE,  FALSE,
-     "30",  29.34,    FALSE,  TRUE,   TRUE,
-     "31",  29.34,    FALSE,  TRUE,   TRUE,
-     "32",  45.27,    FALSE,  TRUE,  FALSE,
-     "33",  45.27,    FALSE,  TRUE,  FALSE,
-     "34",  45.27,    FALSE,  TRUE,  FALSE,
-     "35",  45.27,    FALSE,  TRUE,  FALSE,
-     "36",  62.30,    FALSE, FALSE,  FALSE,
-     "37",  71.92,    FALSE, FALSE,  FALSE,
-     "40",  45.27,    FALSE,  TRUE,  FALSE,
-     "41",  45.27,    FALSE,  TRUE,  FALSE,
-     "42",  45.27,    FALSE,  TRUE,  FALSE,
-     "43",  45.27,    FALSE,  TRUE,  FALSE,
-     "44",  62.30,    FALSE, FALSE,  FALSE,
-     "45",  71.92,    FALSE, FALSE,  FALSE,
-     "50",  45.27,    FALSE,  TRUE,  FALSE,
-     "51",  45.27,    FALSE,  TRUE,  FALSE,
-     "52",  62.30,    FALSE, FALSE,  FALSE,
-     "53",  71.92,    FALSE, FALSE,  FALSE,
-     "60",  62.30,     TRUE, FALSE,  FALSE,
-     "61",  71.92,     TRUE, FALSE,  FALSE,
-     "62",  71.92,     TRUE, FALSE,  FALSE,
-     "70",  71.92,     TRUE, FALSE,  FALSE
+  ~advies, ~ISLED, ~ISLEDHI, ~HAVOVWO, ~VMBO, ~KADER,
+     "10",  29.34,    29.34,    FALSE,  TRUE,   TRUE,
+     "20",  29.34,    29.34,    FALSE,  TRUE,   TRUE,
+     "21",  29.34,    29.34,    FALSE,  TRUE,   TRUE,
+     "22",  29.34,    29.34,    FALSE,  TRUE,   TRUE,
+     "23",  29.34,    29.34,    FALSE,  TRUE,   TRUE,
+     "24",  37.31,    45.27,    FALSE,  TRUE,  FALSE,
+     "25",  37.31,    45.27,    FALSE,  TRUE,  FALSE,
+     "26",  37.31,    45.27,    FALSE,  TRUE,  FALSE,
+     "27",  37.31,    45.27,    FALSE,  TRUE,  FALSE,
+     "28",  45.82,    62.30,    FALSE, FALSE,  FALSE,
+     "29",  50.63,    71.92,    FALSE, FALSE,  FALSE,
+     "30",  29.34,    29.34,    FALSE,  TRUE,   TRUE,
+     "31",  29.34,    29.34,    FALSE,  TRUE,   TRUE,
+     "32",  37.31,    45.27,    FALSE,  TRUE,  FALSE,
+     "33",  37.31,    45.27,    FALSE,  TRUE,  FALSE,
+     "34",  37.31,    45.27,    FALSE,  TRUE,  FALSE,
+     "35",  37.31,    45.27,    FALSE,  TRUE,  FALSE,
+     "36",  45.82,    62.30,    FALSE, FALSE,  FALSE,
+     "37",  50.63,    71.92,    FALSE, FALSE,  FALSE,
+     "40",  45.27,    45.27,    FALSE,  TRUE,  FALSE,
+     "41",  45.27,    45.27,    FALSE,  TRUE,  FALSE,
+     "42",  45.27,    45.27,    FALSE,  TRUE,  FALSE,
+     "43",  45.27,    45.27,    FALSE,  TRUE,  FALSE,
+     "44",  53.79,    62.30,    FALSE, FALSE,  FALSE,
+     "45",  58.60,    71.92,    FALSE, FALSE,  FALSE,
+     "50",  45.27,    45.27,    FALSE,  TRUE,  FALSE,
+     "51",  45.27,    45.27,    FALSE,  TRUE,  FALSE,
+     "52",  53.79,    62.30,    FALSE, FALSE,  FALSE,
+     "53",  58.60,    71.92,    FALSE, FALSE,  FALSE,
+     "60",  62.30,    62.30,     TRUE, FALSE,  FALSE,
+     "61",  67.11,    71.92,     TRUE, FALSE,  FALSE,
+     "70",  71.92,    71.92,     TRUE, FALSE,  FALSE
 )
 
 year8_students <- 
@@ -178,8 +178,8 @@ year8_students <-
 year8_students <- 
   year8_students |>
   mutate(
-    outcome_CITO = if_else(WPOCODEEINDTOETS == "01" | WPOCODEEINDTOETS == "11", WPOUITSLAGEINDTOETS, NA),
-    outcome_CITO = if_else(outcome_CITO >= 500 | outcome_CITO <= 550, outcome_CITO, NA)
+    outcome_CITO = if_else(WPOCODEEINDTOETS %in% c("01", "11"), WPOUITSLAGEINDTOETS, NA),
+    outcome_CITO = if_else(outcome_CITO >= 500 & outcome_CITO <= 550, outcome_CITO, NA)
   )
 
 write_rds(year8_students, "scratch/year8_students_outcome.rds")

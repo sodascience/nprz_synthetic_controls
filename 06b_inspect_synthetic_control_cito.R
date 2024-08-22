@@ -52,7 +52,7 @@ iwalk(plot_list, \(p, i) ggsave(
 ), .progress = TRUE)
 
 # all at once 
-wrap_plots(plot_list, guides = "collect", nrow = 5, ncol = 5)
+wrap_plots(plot_list, guides = "collect", nrow = 3, ncol = 4) * ylim(520, 545) * theme(axis.text.x = element_text(angle = 90))
 ggsave("img/synth_plots_cito.png", width = 12, height = 7)
 
 
