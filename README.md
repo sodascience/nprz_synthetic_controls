@@ -1,6 +1,6 @@
-# Rotterdam Schools Synthetic Control analysis
+# NPRZ Synthetic Control analysis
 
-Reproducible code archive for NPRZ impact assessment study
+Reproducible code archive accompanying the manuscript "The limited impact of extending the school week on educational outcomes in Dutch primary education: a quasi-experimental study using penalized synthetic control analysis".
 
 ## Preprocessing
 The preprocessing scripts can be run all at once by running the file `01_run_preprocessing.R` from the main directory.
