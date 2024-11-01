@@ -1,6 +1,6 @@
 # NPRZ Synthetic Control analysis
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14022993.svg)](https://doi.org/10.5281/zenodo.14022993)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14022992.svg)](https://doi.org/10.5281/zenodo.14022992)
 
 Reproducible code archive accompanying the manuscript "The limited impact of extending the school week on educational outcomes in Dutch primary education: a quasi-experimental study using penalized synthetic control analysis".
 
