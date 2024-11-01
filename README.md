@@ -1,5 +1,7 @@
 # NPRZ Synthetic Control analysis
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14022993.svg)](https://doi.org/10.5281/zenodo.14022993)
+
 Reproducible code archive accompanying the manuscript "The limited impact of extending the school week on educational outcomes in Dutch primary education: a quasi-experimental study using penalized synthetic control analysis".
 
 This code repository is designed to run on the microdata environment of Statistics Netherlands (CBS). For more information about this, see [the microdata webpage](https://www.cbs.nl/en-gb/our-services/customised-services-microdata/microdata-conducting-your-own-research).
