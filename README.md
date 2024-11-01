@@ -2,6 +2,16 @@
 
 Reproducible code archive accompanying the manuscript "The limited impact of extending the school week on educational outcomes in Dutch primary education: a quasi-experimental study using penalized synthetic control analysis".
 
+This code repository is designed to run on the microdata environment of Statistics Netherlands (CBS). For more information about this, see [the microdata webpage](https://www.cbs.nl/en-gb/our-services/customised-services-microdata/microdata-conducting-your-own-research).
+
+## Installation
+The project uses R and RStudio. To run the project, install both and then open the file `nprz_synthetic_controls.Rproj`. Install the dependencies as follows: 
+
+```r
+deps <- c("haven", "tidyverse", "mice", "purrr", "furrr", "pensynth", "Synth", "patchwork", "writexl")
+install.packages(deps)
+```
+
 ## Preprocessing
 The preprocessing scripts can be run all at once by running the file `01_run_preprocessing.R` from the main directory.
 
@@ -19,7 +29,7 @@ Each of the preprocessing steps in the folder `preprocessing_scripts` can also b
 
 The scripts 02-06 run and inspect the synthetic control method, as follows:
 
-| script | goal |
+| Script | Goal |
 | :----- | :--- |
 | `02_quality_control.R` | Perform several checks on the pre-processed data |
 | `03_summarization.R` | Compute school-level variables from student-level data |
@@ -30,3 +40,8 @@ The scripts 02-06 run and inspect the synthetic control method, as follows:
 
 In addition, the `04` and `05` scripts have versions in the folder `robustness_checks` to re-run the analyses with more potential covariates.
 
+## Contact
+This is a project by the [ODISSEI Social Data Science (SoDa)](https://odissei-soda.nl/) team.
+Do you have questions, suggestions, or remarks on the technical implementation? Create an issue in the [issue tracker](https://github.com/sodascience/nprz_synthetic_controls/issues) or feel free to contact [Erik-Jan van Kesteren](https://github.com/vankesteren) or [Gijs Custers](https://www.eur.nl/en/people/gijs-custers).
+
+<img src="img/soda.png" alt="SoDa logo" width="250px"/> 
